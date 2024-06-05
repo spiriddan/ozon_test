@@ -17,8 +17,18 @@ type Post struct {
 	Body  *string `json:"body,omitempty"`
 }
 
+type PostFilter struct {
+	IDIn []*string `json:"idIn,omitempty"`
+}
+
+type PostPayload struct {
+	Title    string     `json:"title"`
+	Body     *string    `json:"body,omitempty"`
+	Comments []*Comment `json:"comments,omitempty"`
+}
+
 type PostsFilter struct {
-	IDIn []*int `json:"IDIn,omitempty"`
+	IDIn []*string `json:"idIn,omitempty"`
 }
 
 type PostsPayload struct {

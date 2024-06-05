@@ -3,9 +3,19 @@ extend type Query {
 }
 
 input PostsFilter {
-    IDIn: [Int]
+    idIn: [ID]
 }
 
 type PostsPayload {
     posts: [Post]
+}
+
+type PostFilter {
+    idIn: [ID]
+}
+
+type PostPayload {
+    title: String!
+    body: String
+    comments: [Comment]
 }
