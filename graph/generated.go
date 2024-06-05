@@ -55,18 +55,13 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		CreatePost func(childComplexity int, input model.CreatePostInput) int
-		DeletePost func(childComplexity int, input model.DeletePostInput) int
-		UpdatePost func(childComplexity int, input model.UpdatePostInput) int
 	}
 
 	Post struct {
-		Body  func(childComplexity int) int
-		ID    func(childComplexity int) int
-		Title func(childComplexity int) int
-	}
-
-	PostFilter struct {
-		IDIn func(childComplexity int) int
+		Body       func(childComplexity int) int
+		CanComment func(childComplexity int) int
+		ID         func(childComplexity int) int
+		Title      func(childComplexity int) int
 	}
 
 	PostPayload struct {
@@ -80,29 +75,21 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Posts func(childComplexity int, filter *model.PostsFilter) int
+		Post  func(childComplexity int, input model.PostFilter) int
+		Posts func(childComplexity int) int
 	}
 
 	CreatePostPayload struct {
-		Post func(childComplexity int) int
-	}
-
-	DeletePostPayload struct {
-		Success func(childComplexity int) int
-	}
-
-	UpdatePostPayload struct {
 		Post func(childComplexity int) int
 	}
 }
 
 type MutationResolver interface {
 	CreatePost(ctx context.Context, input model.CreatePostInput) (*model.CreatePostPayload, error)
-	UpdatePost(ctx context.Context, input model.UpdatePostInput) (*model.UpdatePostPayload, error)
-	DeletePost(ctx context.Context, input model.DeletePostInput) (*model.DeletePostPayload, error)
 }
 type QueryResolver interface {
-	Posts(ctx context.Context, filter *model.PostsFilter) (*model.PostsPayload, error)
+	Posts(ctx context.Context) (*model.PostsPayload, error)
+	Post(ctx context.Context, input model.PostFilter) (*model.PostPayload, error)
 }
 
 type executableSchema struct {
@@ -157,36 +144,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreatePost(childComplexity, args["input"].(model.CreatePostInput)), true
 
-	case "Mutation.deletePost":
-		if e.complexity.Mutation.DeletePost == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_deletePost_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.DeletePost(childComplexity, args["input"].(model.DeletePostInput)), true
-
-	case "Mutation.updatePost":
-		if e.complexity.Mutation.UpdatePost == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_updatePost_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.UpdatePost(childComplexity, args["input"].(model.UpdatePostInput)), true
-
 	case "Post.body":
 		if e.complexity.Post.Body == nil {
 			break
 		}
 
 		return e.complexity.Post.Body(childComplexity), true
+
+	case "Post.canComment":
+		if e.complexity.Post.CanComment == nil {
+			break
+		}
+
+		return e.complexity.Post.CanComment(childComplexity), true
 
 	case "Post.id":
 		if e.complexity.Post.ID == nil {
@@ -201,13 +171,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Post.Title(childComplexity), true
-
-	case "PostFilter.idIn":
-		if e.complexity.PostFilter.IDIn == nil {
-			break
-		}
-
-		return e.complexity.PostFilter.IDIn(childComplexity), true
 
 	case "PostPayload.body":
 		if e.complexity.PostPayload.Body == nil {
@@ -237,17 +200,24 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.PostsPayload.Posts(childComplexity), true
 
+	case "Query.post":
+		if e.complexity.Query.Post == nil {
+			break
+		}
+
+		args, err := ec.field_Query_post_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Post(childComplexity, args["input"].(model.PostFilter)), true
+
 	case "Query.posts":
 		if e.complexity.Query.Posts == nil {
 			break
 		}
 
-		args, err := ec.field_Query_posts_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.Posts(childComplexity, args["filter"].(*model.PostsFilter)), true
+		return e.complexity.Query.Posts(childComplexity), true
 
 	case "createPostPayload.post":
 		if e.complexity.CreatePostPayload.Post == nil {
@@ -255,20 +225,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.CreatePostPayload.Post(childComplexity), true
-
-	case "deletePostPayload.success":
-		if e.complexity.DeletePostPayload.Success == nil {
-			break
-		}
-
-		return e.complexity.DeletePostPayload.Success(childComplexity), true
-
-	case "updatePostPayload.post":
-		if e.complexity.UpdatePostPayload.Post == nil {
-			break
-		}
-
-		return e.complexity.UpdatePostPayload.Post(childComplexity), true
 
 	}
 	return 0, false
@@ -278,10 +234,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	rc := graphql.GetOperationContext(ctx)
 	ec := executionContext{rc, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
-		ec.unmarshalInputPostsFilter,
+		ec.unmarshalInputPostFilter,
 		ec.unmarshalInputcreatePostInput,
-		ec.unmarshalInputdeletePostInput,
-		ec.unmarshalInputupdatePostInput,
 	)
 	first := true
 
@@ -417,36 +371,6 @@ func (ec *executionContext) field_Mutation_createPost_args(ctx context.Context, 
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_deletePost_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.DeletePostInput
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNdeletePostInput2mainᚋgraphᚋmodelᚐDeletePostInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_updatePost_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.UpdatePostInput
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNupdatePostInput2mainᚋgraphᚋmodelᚐUpdatePostInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -462,18 +386,18 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_posts_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query_post_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *model.PostsFilter
-	if tmp, ok := rawArgs["filter"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
-		arg0, err = ec.unmarshalOPostsFilter2ᚖmainᚋgraphᚋmodelᚐPostsFilter(ctx, tmp)
+	var arg0 model.PostFilter
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNPostFilter2mainᚋgraphᚋmodelᚐPostFilter(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["filter"] = arg0
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -541,9 +465,9 @@ func (ec *executionContext) _Comment_id(ctx context.Context, field graphql.Colle
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(int)
 	fc.Result = res
-	return ec.marshalNID2string(ctx, field.Selections, res)
+	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Comment_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -553,7 +477,7 @@ func (ec *executionContext) fieldContext_Comment_id(_ context.Context, field gra
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID does not have child fields")
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -703,118 +627,6 @@ func (ec *executionContext) fieldContext_Mutation_createPost(ctx context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_updatePost(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_updatePost(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdatePost(rctx, fc.Args["input"].(model.UpdatePostInput))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*model.UpdatePostPayload)
-	fc.Result = res
-	return ec.marshalOupdatePostPayload2ᚖmainᚋgraphᚋmodelᚐUpdatePostPayload(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_updatePost(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "post":
-				return ec.fieldContext_updatePostPayload_post(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type updatePostPayload", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_updatePost_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_deletePost(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_deletePost(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().DeletePost(rctx, fc.Args["input"].(model.DeletePostInput))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*model.DeletePostPayload)
-	fc.Result = res
-	return ec.marshalOdeletePostPayload2ᚖmainᚋgraphᚋmodelᚐDeletePostPayload(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_deletePost(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "success":
-				return ec.fieldContext_deletePostPayload_success(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type deletePostPayload", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_deletePost_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Post_id(ctx context.Context, field graphql.CollectedField, obj *model.Post) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Post_id(ctx, field)
 	if err != nil {
@@ -841,9 +653,9 @@ func (ec *executionContext) _Post_id(ctx context.Context, field graphql.Collecte
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(int)
 	fc.Result = res
-	return ec.marshalNID2string(ctx, field.Selections, res)
+	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Post_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -853,7 +665,7 @@ func (ec *executionContext) fieldContext_Post_id(_ context.Context, field graphq
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID does not have child fields")
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -944,8 +756,8 @@ func (ec *executionContext) fieldContext_Post_body(_ context.Context, field grap
 	return fc, nil
 }
 
-func (ec *executionContext) _PostFilter_idIn(ctx context.Context, field graphql.CollectedField, obj *model.PostFilter) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_PostFilter_idIn(ctx, field)
+func (ec *executionContext) _Post_canComment(ctx context.Context, field graphql.CollectedField, obj *model.Post) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Post_canComment(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -958,28 +770,31 @@ func (ec *executionContext) _PostFilter_idIn(ctx context.Context, field graphql.
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.IDIn, nil
+		return obj.CanComment, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.([]*string)
+	res := resTmp.(bool)
 	fc.Result = res
-	return ec.marshalOID2ᚕᚖstring(ctx, field.Selections, res)
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_PostFilter_idIn(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Post_canComment(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "PostFilter",
+		Object:     "Post",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID does not have child fields")
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -1161,6 +976,8 @@ func (ec *executionContext) fieldContext_PostsPayload_posts(_ context.Context, f
 				return ec.fieldContext_Post_title(ctx, field)
 			case "body":
 				return ec.fieldContext_Post_body(ctx, field)
+			case "canComment":
+				return ec.fieldContext_Post_canComment(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Post", field.Name)
 		},
@@ -1182,7 +999,7 @@ func (ec *executionContext) _Query_posts(ctx context.Context, field graphql.Coll
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Posts(rctx, fc.Args["filter"].(*model.PostsFilter))
+		return ec.resolvers.Query().Posts(rctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1196,7 +1013,7 @@ func (ec *executionContext) _Query_posts(ctx context.Context, field graphql.Coll
 	return ec.marshalOPostsPayload2ᚖmainᚋgraphᚋmodelᚐPostsPayload(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_posts(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_posts(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -1210,6 +1027,55 @@ func (ec *executionContext) fieldContext_Query_posts(ctx context.Context, field 
 			return nil, fmt.Errorf("no field named %q was found under type PostsPayload", field.Name)
 		},
 	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_post(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_post(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Post(rctx, fc.Args["input"].(model.PostFilter))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.PostPayload)
+	fc.Result = res
+	return ec.marshalOPostPayload2ᚖmainᚋgraphᚋmodelᚐPostPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_post(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "title":
+				return ec.fieldContext_PostPayload_title(ctx, field)
+			case "body":
+				return ec.fieldContext_PostPayload_body(ctx, field)
+			case "comments":
+				return ec.fieldContext_PostPayload_comments(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PostPayload", field.Name)
+		},
+	}
 	defer func() {
 		if r := recover(); r != nil {
 			err = ec.Recover(ctx, r)
@@ -1217,7 +1083,7 @@ func (ec *executionContext) fieldContext_Query_posts(ctx context.Context, field 
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_posts_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Query_post_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -3167,102 +3033,8 @@ func (ec *executionContext) fieldContext_createPostPayload_post(_ context.Contex
 				return ec.fieldContext_Post_title(ctx, field)
 			case "body":
 				return ec.fieldContext_Post_body(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Post", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _deletePostPayload_success(ctx context.Context, field graphql.CollectedField, obj *model.DeletePostPayload) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_deletePostPayload_success(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Success, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_deletePostPayload_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "deletePostPayload",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _updatePostPayload_post(ctx context.Context, field graphql.CollectedField, obj *model.UpdatePostPayload) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_updatePostPayload_post(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Post, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.Post)
-	fc.Result = res
-	return ec.marshalNPost2ᚖmainᚋgraphᚋmodelᚐPost(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_updatePostPayload_post(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "updatePostPayload",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Post_id(ctx, field)
-			case "title":
-				return ec.fieldContext_Post_title(ctx, field)
-			case "body":
-				return ec.fieldContext_Post_body(ctx, field)
+			case "canComment":
+				return ec.fieldContext_Post_canComment(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Post", field.Name)
 		},
@@ -3274,8 +3046,8 @@ func (ec *executionContext) fieldContext_updatePostPayload_post(_ context.Contex
 
 // region    **************************** input.gotpl *****************************
 
-func (ec *executionContext) unmarshalInputPostsFilter(ctx context.Context, obj interface{}) (model.PostsFilter, error) {
-	var it model.PostsFilter
+func (ec *executionContext) unmarshalInputPostFilter(ctx context.Context, obj interface{}) (model.PostFilter, error) {
+	var it model.PostFilter
 	asMap := map[string]interface{}{}
 	for k, v := range obj.(map[string]interface{}) {
 		asMap[k] = v
@@ -3290,7 +3062,7 @@ func (ec *executionContext) unmarshalInputPostsFilter(ctx context.Context, obj i
 		switch k {
 		case "idIn":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("idIn"))
-			data, err := ec.unmarshalOID2ᚕᚖstring(ctx, v)
+			data, err := ec.unmarshalNInt2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -3308,7 +3080,7 @@ func (ec *executionContext) unmarshalInputcreatePostInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"title", "body"}
+	fieldsInOrder := [...]string{"title", "body", "canComment"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -3329,74 +3101,13 @@ func (ec *executionContext) unmarshalInputcreatePostInput(ctx context.Context, o
 				return it, err
 			}
 			it.Body = data
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputdeletePostInput(ctx context.Context, obj interface{}) (model.DeletePostInput, error) {
-	var it model.DeletePostInput
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"postID"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "postID":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("postID"))
-			data, err := ec.unmarshalNID2string(ctx, v)
+		case "canComment":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("canComment"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.PostID = data
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputupdatePostInput(ctx context.Context, obj interface{}) (model.UpdatePostInput, error) {
-	var it model.UpdatePostInput
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"postID", "title", "body"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "postID":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("postID"))
-			data, err := ec.unmarshalNID2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.PostID = data
-		case "title":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Title = data
-		case "body":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("body"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Body = data
+			it.CanComment = data
 		}
 	}
 
@@ -3483,14 +3194,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createPost(ctx, field)
 			})
-		case "updatePost":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_updatePost(ctx, field)
-			})
-		case "deletePost":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_deletePost(ctx, field)
-			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3537,42 +3240,11 @@ func (ec *executionContext) _Post(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "body":
 			out.Values[i] = ec._Post_body(ctx, field, obj)
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var postFilterImplementors = []string{"PostFilter"}
-
-func (ec *executionContext) _PostFilter(ctx context.Context, sel ast.SelectionSet, obj *model.PostFilter) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, postFilterImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("PostFilter")
-		case "idIn":
-			out.Values[i] = ec._PostFilter_idIn(ctx, field, obj)
+		case "canComment":
+			out.Values[i] = ec._Post_canComment(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3704,6 +3376,25 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_posts(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "post":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_post(ctx, field)
 				return res
 			}
 
@@ -4105,84 +3796,6 @@ func (ec *executionContext) _createPostPayload(ctx context.Context, sel ast.Sele
 	return out
 }
 
-var deletePostPayloadImplementors = []string{"deletePostPayload"}
-
-func (ec *executionContext) _deletePostPayload(ctx context.Context, sel ast.SelectionSet, obj *model.DeletePostPayload) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, deletePostPayloadImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("deletePostPayload")
-		case "success":
-			out.Values[i] = ec._deletePostPayload_success(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var updatePostPayloadImplementors = []string{"updatePostPayload"}
-
-func (ec *executionContext) _updatePostPayload(ctx context.Context, sel ast.SelectionSet, obj *model.UpdatePostPayload) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, updatePostPayloadImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("updatePostPayload")
-		case "post":
-			out.Values[i] = ec._updatePostPayload_post(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
 // endregion **************************** object.gotpl ****************************
 
 // region    ***************************** type.gotpl *****************************
@@ -4194,21 +3807,6 @@ func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interf
 
 func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.SelectionSet, v bool) graphql.Marshaler {
 	res := graphql.MarshalBoolean(v)
-	if res == graphql.Null {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-	}
-	return res
-}
-
-func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
-	res, err := graphql.UnmarshalID(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	res := graphql.MarshalID(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -4240,6 +3838,11 @@ func (ec *executionContext) marshalNPost2ᚖmainᚋgraphᚋmodelᚐPost(ctx cont
 		return graphql.Null
 	}
 	return ec._Post(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNPostFilter2mainᚋgraphᚋmodelᚐPostFilter(ctx context.Context, v interface{}) (model.PostFilter, error) {
+	res, err := ec.unmarshalInputPostFilter(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
@@ -4515,16 +4118,6 @@ func (ec *executionContext) unmarshalNcreatePostInput2mainᚋgraphᚋmodelᚐCre
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNdeletePostInput2mainᚋgraphᚋmodelᚐDeletePostInput(ctx context.Context, v interface{}) (model.DeletePostInput, error) {
-	res, err := ec.unmarshalInputdeletePostInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNupdatePostInput2mainᚋgraphᚋmodelᚐUpdatePostInput(ctx context.Context, v interface{}) (model.UpdatePostInput, error) {
-	res, err := ec.unmarshalInputupdatePostInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -4599,54 +4192,6 @@ func (ec *executionContext) marshalOComment2ᚖmainᚋgraphᚋmodelᚐComment(ct
 	return ec._Comment(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalOID2ᚕᚖstring(ctx context.Context, v interface{}) ([]*string, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var vSlice []interface{}
-	if v != nil {
-		vSlice = graphql.CoerceList(v)
-	}
-	var err error
-	res := make([]*string, len(vSlice))
-	for i := range vSlice {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalOID2ᚖstring(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
-func (ec *executionContext) marshalOID2ᚕᚖstring(ctx context.Context, sel ast.SelectionSet, v []*string) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	ret := make(graphql.Array, len(v))
-	for i := range v {
-		ret[i] = ec.marshalOID2ᚖstring(ctx, sel, v[i])
-	}
-
-	return ret
-}
-
-func (ec *executionContext) unmarshalOID2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := graphql.UnmarshalID(v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOID2ᚖstring(ctx context.Context, sel ast.SelectionSet, v *string) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	res := graphql.MarshalID(*v)
-	return res
-}
-
 func (ec *executionContext) marshalOPost2ᚕᚖmainᚋgraphᚋmodelᚐPost(ctx context.Context, sel ast.SelectionSet, v []*model.Post) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -4695,12 +4240,11 @@ func (ec *executionContext) marshalOPost2ᚖmainᚋgraphᚋmodelᚐPost(ctx cont
 	return ec._Post(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalOPostsFilter2ᚖmainᚋgraphᚋmodelᚐPostsFilter(ctx context.Context, v interface{}) (*model.PostsFilter, error) {
+func (ec *executionContext) marshalOPostPayload2ᚖmainᚋgraphᚋmodelᚐPostPayload(ctx context.Context, sel ast.SelectionSet, v *model.PostPayload) graphql.Marshaler {
 	if v == nil {
-		return nil, nil
+		return graphql.Null
 	}
-	res, err := ec.unmarshalInputPostsFilter(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
+	return ec._PostPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOPostsPayload2ᚖmainᚋgraphᚋmodelᚐPostsPayload(ctx context.Context, sel ast.SelectionSet, v *model.PostsPayload) graphql.Marshaler {
@@ -4933,20 +4477,6 @@ func (ec *executionContext) marshalOcreatePostPayload2ᚖmainᚋgraphᚋmodelᚐ
 		return graphql.Null
 	}
 	return ec._createPostPayload(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalOdeletePostPayload2ᚖmainᚋgraphᚋmodelᚐDeletePostPayload(ctx context.Context, sel ast.SelectionSet, v *model.DeletePostPayload) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._deletePostPayload(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalOupdatePostPayload2ᚖmainᚋgraphᚋmodelᚐUpdatePostPayload(ctx context.Context, sel ast.SelectionSet, v *model.UpdatePostPayload) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._updatePostPayload(ctx, sel, v)
 }
 
 // endregion ***************************** type.gotpl *****************************

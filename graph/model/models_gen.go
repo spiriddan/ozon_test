@@ -3,7 +3,7 @@
 package model
 
 type Comment struct {
-	ID       string `json:"id"`
+	ID       int    `json:"id"`
 	Body     string `json:"body"`
 	ParentID int    `json:"parentID"`
 }
@@ -12,23 +12,20 @@ type Mutation struct {
 }
 
 type Post struct {
-	ID    string  `json:"id"`
-	Title string  `json:"title"`
-	Body  *string `json:"body,omitempty"`
+	ID         int     `json:"id"`
+	Title      string  `json:"title"`
+	Body       *string `json:"body,omitempty"`
+	CanComment bool    `json:"canComment"`
 }
 
 type PostFilter struct {
-	IDIn []*string `json:"idIn,omitempty"`
+	IDIn int `json:"idIn"`
 }
 
 type PostPayload struct {
 	Title    string     `json:"title"`
 	Body     *string    `json:"body,omitempty"`
 	Comments []*Comment `json:"comments,omitempty"`
-}
-
-type PostsFilter struct {
-	IDIn []*string `json:"idIn,omitempty"`
 }
 
 type PostsPayload struct {
@@ -39,28 +36,11 @@ type Query struct {
 }
 
 type CreatePostInput struct {
-	Title string  `json:"title"`
-	Body  *string `json:"body,omitempty"`
+	Title      string  `json:"title"`
+	Body       *string `json:"body,omitempty"`
+	CanComment bool    `json:"canComment"`
 }
 
 type CreatePostPayload struct {
-	Post *Post `json:"post"`
-}
-
-type DeletePostInput struct {
-	PostID string `json:"postID"`
-}
-
-type DeletePostPayload struct {
-	Success bool `json:"success"`
-}
-
-type UpdatePostInput struct {
-	PostID string  `json:"postID"`
-	Title  *string `json:"title,omitempty"`
-	Body   *string `json:"body,omitempty"`
-}
-
-type UpdatePostPayload struct {
 	Post *Post `json:"post"`
 }

@@ -1,17 +1,14 @@
 extend type Query {
-    posts(filter: PostsFilter): PostsPayload
-}
-
-input PostsFilter {
-    idIn: [ID]
+    posts: PostsPayload
+    post(input: PostFilter!): PostPayload
 }
 
 type PostsPayload {
     posts: [Post]
 }
 
-type PostFilter {
-    idIn: [ID]
+input PostFilter {
+    idIn: Int!
 }
 
 type PostPayload {

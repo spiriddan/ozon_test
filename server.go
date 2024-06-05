@@ -1,13 +1,13 @@
 package main
 
 import (
-	"log"
-	"main/graph"
-	"net/http"
-	"os"
-
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"log"
+	"main/graph"
+	post "main/packages/post/repo/inMemory"
+	"net/http"
+	"os"
 )
 
 const defaultPort = "8080"
@@ -18,7 +18,11 @@ func main() {
 		port = defaultPort
 	}
 
-	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}}))
+	postStorage := post.NewPostMemoryRepo()
+
+	resolver := graph.NewResolver(postStorage)
+
+	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: resolver}))
 
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", srv)

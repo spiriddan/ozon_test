@@ -1,32 +1,13 @@
 extend type Mutation {
     createPost(input: createPostInput!): createPostPayload
-    updatePost(input: updatePostInput!): updatePostPayload
-    deletePost(input: deletePostInput!): deletePostPayload
 }
 
 input createPostInput {
     title: String!
     body: String
-}
-
-input deletePostInput {
-    postID: ID!
-}
-
-input updatePostInput {
-    postID:ID!
-    title: String
-    body: String
+    canComment: Boolean!
 }
 
 type createPostPayload {
-    post: Post!
-}
-
-type deletePostPayload {
-    success: Boolean!
-}
-
-type updatePostPayload{
     post: Post!
 }

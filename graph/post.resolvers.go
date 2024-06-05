@@ -6,26 +6,20 @@ package graph
 
 import (
 	"context"
-	"fmt"
 	"main/graph/model"
 )
 
 // CreatePost is the resolver for the createPost field.
 func (r *mutationResolver) CreatePost(ctx context.Context, input model.CreatePostInput) (*model.CreatePostPayload, error) {
-	panic(fmt.Errorf("not implemented: CreatePost - createPost"))
-}
-
-// UpdatePost is the resolver for the updatePost field.
-func (r *mutationResolver) UpdatePost(ctx context.Context, input model.UpdatePostInput) (*model.UpdatePostPayload, error) {
-	panic(fmt.Errorf("not implemented: UpdatePost - updatePost"))
-}
-
-// DeletePost is the resolver for the deletePost field.
-func (r *mutationResolver) DeletePost(ctx context.Context, input model.DeletePostInput) (*model.DeletePostPayload, error) {
-	panic(fmt.Errorf("not implemented: DeletePost - deletePost"))
+	return r.postRepo.CreatePost(input)
 }
 
 // Posts is the resolver for the posts field.
-func (r *queryResolver) Posts(ctx context.Context, filter *model.PostsFilter) (*model.PostsPayload, error) {
-	panic(fmt.Errorf("not implemented: Posts - posts"))
+func (r *queryResolver) Posts(ctx context.Context) (*model.PostsPayload, error) {
+	return r.postRepo.GetPosts()
+}
+
+// Post is the resolver for the post field.
+func (r *queryResolver) Post(ctx context.Context, input model.PostFilter) (*model.PostPayload, error) {
+	return r.postRepo.GetPost(input)
 }
