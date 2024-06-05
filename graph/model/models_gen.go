@@ -2,25 +2,55 @@
 
 package model
 
+type Comment struct {
+	ID       string `json:"id"`
+	Body     string `json:"body"`
+	ParentID int    `json:"parentID"`
+}
+
 type Mutation struct {
 }
 
-type NewTodo struct {
-	Text   string `json:"text"`
-	UserID string `json:"userId"`
+type Post struct {
+	ID    string  `json:"id"`
+	Title string  `json:"title"`
+	Body  *string `json:"body,omitempty"`
+}
+
+type PostsFilter struct {
+	IDIn []*int `json:"IDIn,omitempty"`
+}
+
+type PostsPayload struct {
+	Posts []*Post `json:"posts,omitempty"`
 }
 
 type Query struct {
 }
 
-type Todo struct {
-	ID   string `json:"id"`
-	Text string `json:"text"`
-	Done bool   `json:"done"`
-	User *User  `json:"user"`
+type CreatePostInput struct {
+	Title string  `json:"title"`
+	Body  *string `json:"body,omitempty"`
 }
 
-type User struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+type CreatePostPayload struct {
+	Post *Post `json:"post"`
+}
+
+type DeletePostInput struct {
+	PostID string `json:"postID"`
+}
+
+type DeletePostPayload struct {
+	Success bool `json:"success"`
+}
+
+type UpdatePostInput struct {
+	PostID string  `json:"postID"`
+	Title  *string `json:"title,omitempty"`
+	Body   *string `json:"body,omitempty"`
+}
+
+type UpdatePostPayload struct {
+	Post *Post `json:"post"`
 }
