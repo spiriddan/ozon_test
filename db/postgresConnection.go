@@ -12,13 +12,9 @@ type Config struct {
 }
 
 func GetPostgresConnection(config Config) (*sql.DB, error) {
-	//psqInfo := fmt.Sprintf("host=%s port=%s user=%s "+
-	//	"password=%s dbname=%s sslmode=disable",
-	//	config.Host, config.Port, config.User, config.Password, config.Dbname) TODO
-
 	psqInfo := fmt.Sprintf("host=%s port=%s user=%s "+
 		"password=%s dbname=%s sslmode=disable",
-		"localhost", "5432", "postgres", "postgres", "coolHabr")
+		config.Host, config.Port, config.User, config.Password, config.Dbname)
 
 	db, err := sql.Open("postgres", psqInfo)
 	if err != nil {

@@ -70,14 +70,15 @@ func (repo *PostgresRepo) GetPostComments(id int) ([]*model.Comment, error) {
 	}
 	defer rows.Close()
 	res := make([]*model.Comment, 0)
-	var scanning model.Comment
+	var scanning *model.Comment
 	for rows.Next() {
+		scanning = &model.Comment{}
 		err = rows.Scan(&scanning.ID, &scanning.Body, &scanning.ParentID)
 		if err != nil {
 			return nil, err
 		}
 		scanning.ParentType = model.ParentPost
-		res = append(res, &scanning)
+		res = append(res, scanning)
 	}
 
 	return res, nil
@@ -98,14 +99,15 @@ func (repo *PostgresRepo) GetCommentReplies(id int) ([]*model.Comment, error) {
 	}
 	defer rows.Close()
 	res := make([]*model.Comment, 0)
-	var scanning model.Comment
+	var scanning *model.Comment
 	for rows.Next() {
+		scanning = &model.Comment{}
 		err = rows.Scan(&scanning.ID, &scanning.Body, &scanning.ParentID)
 		if err != nil {
 			return nil, err
 		}
 		scanning.ParentType = model.ParentComment
-		res = append(res, &scanning)
+		res = append(res, scanning)
 	}
 
 	return res, nil
