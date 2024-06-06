@@ -42,7 +42,7 @@ func (sub *CommentSubscriberManager) DeleteSubscriber(id int) error {
 		for i, k := range value.([]Subscriber) {
 			if int(k.id) == id {
 				subs, _ := sub.subscribers.Load(key)
-				subs = append(subs.([]Subscriber)[:i], subs.([]Subscriber)[i+1])
+				subs = append(subs.([]Subscriber)[:i], subs.([]Subscriber)[:i+1]...)
 				return true
 			}
 		}
