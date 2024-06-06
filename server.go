@@ -4,9 +4,12 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"log"
+	"main/db"
 	"main/graph"
-	comment "main/packages/comment/repo/inMemory"
-	post "main/packages/post/repo/inMemory"
+	commPostgres "main/packages/comment/repo/postgres"
+	//comment "main/packages/comment/repo/inMemory"
+	//post "main/packages/post/repo/inMemory"
+	postPostgres "main/packages/post/repo/postgres"
 	"net/http"
 	"os"
 )
@@ -14,13 +17,30 @@ import (
 const defaultPort = "8080"
 
 func main() {
-	port := os.Getenv("PORT")
+	port := os.Getenv("SERVER_PORT")
 	if port == "" {
 		port = defaultPort
 	}
 
-	postStorage := post.NewPostMemoryRepo()
-	commStorage := comment.NewCommentMemoryRepo()
+	postgresConfig := db.Config{
+		Host:     os.Getenv("POSTGRES_HOST"),
+		Port:     os.Getenv("POSTGRES_PORT"),
+		User:     os.Getenv("POSTGRES_USER"),
+		Password: os.Getenv("POSTGRES_PASSWORD"),
+		Dbname:   os.Getenv("POSTGRES_DBNAME"),
+	}
+
+	//if false {
+	postgresConn, err := db.GetPostgresConnection(postgresConfig) // TODO
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+	postStorage := postPostgres.NewPostgresRepo(postgresConn)
+	commStorage := commPostgres.NewPostgresRepo(postgresConn)
+	//}
+
+	//postStorage := post.NewPostMemoryRepo()
+	//commStorage := comment.NewCommentMemoryRepo()
 
 	resolver := graph.NewResolver(postStorage, commStorage)
 

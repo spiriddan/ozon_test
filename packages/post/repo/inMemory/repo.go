@@ -22,7 +22,7 @@ func (repo *MemoryRepo) GetPost(filter model.PostFilter) (*model.PostPayload, er
 	repo.mx.RLock()
 	defer repo.mx.RUnlock()
 
-	for _, p := range repo.Posts { // TODO
+	for _, p := range repo.Posts {
 		if p.ID == filter.IDIn {
 			res.Posts = append(res.Posts, p)
 			return res, nil
