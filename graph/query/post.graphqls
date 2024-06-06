@@ -4,7 +4,7 @@ extend type Query {
 }
 
 type PostsPayload {
-    posts: [Post]
+    posts: [Post]!
 }
 
 input PostFilter {
@@ -12,7 +12,5 @@ input PostFilter {
 }
 
 type PostPayload {
-    title: String!
-    body: String
-    comments: [Comment]
+    posts: [Post]!
 }

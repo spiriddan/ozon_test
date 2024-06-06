@@ -5,6 +5,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 	"log"
 	"main/graph"
+	comment "main/packages/comment/repo/inMemory"
 	post "main/packages/post/repo/inMemory"
 	"net/http"
 	"os"
@@ -19,8 +20,9 @@ func main() {
 	}
 
 	postStorage := post.NewPostMemoryRepo()
+	commStorage := comment.NewCommentMemoryRepo()
 
-	resolver := graph.NewResolver(postStorage)
+	resolver := graph.NewResolver(postStorage, commStorage)
 
 	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: resolver}))
 

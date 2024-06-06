@@ -3,4 +3,5 @@ type Post{
     title: String!
     body: String
     canComment: Boolean!
+    comments: [Comment]!
 }

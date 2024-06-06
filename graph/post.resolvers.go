@@ -14,6 +14,11 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input model.CreatePos
 	return r.postRepo.CreatePost(input)
 }
 
+// Comments is the resolver for the comments field.
+func (r *postResolver) Comments(ctx context.Context, obj *model.Post) ([]*model.Comment, error) {
+	return r.commentRepo.GetPostComments(obj.ID)
+}
+
 // Posts is the resolver for the posts field.
 func (r *queryResolver) Posts(ctx context.Context) (*model.PostsPayload, error) {
 	return r.postRepo.GetPosts()
@@ -23,3 +28,8 @@ func (r *queryResolver) Posts(ctx context.Context) (*model.PostsPayload, error) 
 func (r *queryResolver) Post(ctx context.Context, input model.PostFilter) (*model.PostPayload, error) {
 	return r.postRepo.GetPost(input)
 }
+
+// Post returns PostResolver implementation.
+func (r *Resolver) Post() PostResolver { return &postResolver{r} }
+
+type postResolver struct{ *Resolver }

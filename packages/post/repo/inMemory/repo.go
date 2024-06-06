@@ -18,16 +18,18 @@ func NewPostMemoryRepo() *MemoryRepo {
 }
 
 func (repo *MemoryRepo) GetPost(filter model.PostFilter) (*model.PostPayload, error) {
+	res := &model.PostPayload{Posts: []*model.Post{}}
 	repo.mx.RLock()
 	defer repo.mx.RUnlock()
 
 	for _, p := range repo.Posts { // TODO
 		if p.ID == filter.IDIn {
-			return &model.PostPayload{Title: p.Title, Body: p.Body}, nil
+			res.Posts = append(res.Posts, p)
+			return res, nil
 		}
 	}
 
-	return nil, post.NoPostErr
+	return nil, post.NoPostError
 }
 
 func (repo *MemoryRepo) CreatePost(input model.CreatePostInput) (*model.CreatePostPayload, error) {

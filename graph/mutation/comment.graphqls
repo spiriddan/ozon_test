@@ -1,0 +1,13 @@
+extend type Mutation {
+    createComment(input: createCommentInput!): createCommentPayload
+}
+
+input createCommentInput {
+    body: String!
+    parentType: Parent!
+    parentID: Int!
+}
+
+type createCommentPayload {
+    comment: Comment!
+}

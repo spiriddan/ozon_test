@@ -2,4 +2,11 @@ type Comment{
     id: Int!
     body: String!
     parentID: Int!
+    parentType: Parent!
+    replies: [Comment]!
+}
+
+enum Parent{
+    post
+    comment
 }
