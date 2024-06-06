@@ -40,7 +40,7 @@ func (repo *MemoryRepo) CreatePost(input model.CreatePostInput) (*model.CreatePo
 		ID:         n + 1,
 		Title:      input.Title,
 		Body:       input.Body,
-		CanComment: true,
+		CanComment: input.CanComment,
 	}
 	repo.Posts = append(repo.Posts, res)
 	return &model.CreatePostPayload{Post: res}, nil

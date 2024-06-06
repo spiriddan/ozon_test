@@ -2,6 +2,7 @@ package inMemory
 
 import (
 	"main/graph/model"
+	"main/packages/comment"
 	"sync"
 	"sync/atomic"
 )
@@ -23,6 +24,9 @@ func NewCommentMemoryRepo() *MemoryRepo {
 
 func (repo *MemoryRepo) CreateComment(commen model.CreateCommentInput) (model.Comment, error) {
 	comm := model.Comment{}
+	if commen.ParentType == model.ParentComment && commen.ParentID > int(repo.commentsAmount) {
+		return model.Comment{}, comment.NoCommentError
+	}
 	atomic.AddInt64(&repo.commentsAmount, 1)
 	comm.ID = int(repo.commentsAmount)
 	comm.Body = commen.Body

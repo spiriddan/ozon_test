@@ -7,6 +7,8 @@ package graph
 import (
 	"context"
 	"main/graph/model"
+	"main/packages/comment"
+	"main/packages/post"
 )
 
 // Replies is the resolver for the replies field.
@@ -16,7 +18,22 @@ func (r *commentResolver) Replies(ctx context.Context, obj *model.Comment) ([]*m
 
 // CreateComment is the resolver for the createComment field.
 func (r *mutationResolver) CreateComment(ctx context.Context, input model.CreateCommentInput) (*model.CreateCommentPayload, error) {
-	res, _ := r.commentRepo.CreateComment(input) // TODO
+	if input.ParentType == model.ParentPost {
+		posts, err := r.postRepo.GetPost(model.PostFilter{IDIn: input.ParentID})
+		if err != nil {
+			return nil, err
+		}
+		if len(posts.Posts) == 0 {
+			return nil, post.NoPostError
+		}
+		if !posts.Posts[0].CanComment {
+			return nil, comment.CommentNotAllowed
+		}
+	}
+	res, err := r.commentRepo.CreateComment(input)
+	if err != nil {
+		return nil, err
+	}
 	return &model.CreateCommentPayload{Comment: &res}, nil
 }
 
