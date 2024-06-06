@@ -6,6 +6,7 @@ package graph
 
 import (
 	"context"
+	"fmt"
 	"main/graph/model"
 	"main/packages/comment"
 	"main/packages/post"
@@ -18,6 +19,9 @@ func (r *commentResolver) Replies(ctx context.Context, obj *model.Comment) ([]*m
 
 // CreateComment is the resolver for the createComment field.
 func (r *mutationResolver) CreateComment(ctx context.Context, input model.CreateCommentInput) (*model.CreateCommentPayload, error) {
+	if len(input.Body) > 2000 {
+		return nil, fmt.Errorf("too long comment (max length 2000 symbols)")
+	}
 	if input.ParentType == model.ParentPost {
 		posts, err := r.postRepo.GetPost(model.PostFilter{IDIn: input.ParentID})
 		if err != nil {
