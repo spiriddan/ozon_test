@@ -1,0 +1,43 @@
+version: "3.8"
+services:
+  db:
+    image: postgres:12-alpine
+    restart: on-failure
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d/
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DBNAME}
+    ports:
+      - ${POSTGRES_PORT}:${POSTGRES_PORT}
+    env_file:
+      - .env
+
+
+  app:
+    container_name: habr_app
+    restart: on-failure
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+    ports:
+      - ${SERVER_PORT}:${SERVER_PORT}
+    env_file:
+      - .env
+#    environment:
+#      POSTGRES_USER: ${POSTGRES_USER}
+#      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+#      POSTGRES_DBNAME: ${POSTGRES_DBNAME}
+#      POSTGRES_HOST: ${POSTGRES_HOST}
+#      POSTGRES_PORT: ${POSTGRES_PORT}
+
+  # на localhost:8000 можно подключиться к бд и посмотреть, что там да как
+  adminer:
+    image: adminer
+    ports:
+      - "8000:8080"
+    depends_on:
+      - db

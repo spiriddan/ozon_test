@@ -1,0 +1,16 @@
+extend type Query {
+    posts: PostsPayload
+    post(input: PostFilter!): PostPayload
+}
+
+type PostsPayload {
+    posts: [Post]!
+}
+
+input PostFilter {
+    idIn: Int!
+}
+
+type PostPayload {
+    posts: [Post]!
+}

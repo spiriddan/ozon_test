@@ -1,0 +1,13 @@
+extend type Mutation {
+    createPost(input: createPostInput!): createPostPayload
+}
+
+input createPostInput {
+    title: String!
+    body: String
+    canComment: Boolean!
+}
+
+type createPostPayload {
+    post: Post!
+}

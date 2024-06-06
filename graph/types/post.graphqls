@@ -1,0 +1,7 @@
+type Post{
+    id: Int!
+    title: String!
+    body: String
+    canComment: Boolean!
+    comments: [Comment]!
+}
