@@ -10,6 +10,7 @@ import (
 	commPostgres "main/packages/comment/repo/postgres"
 	post "main/packages/post/repo/inMemory"
 	postPostgres "main/packages/post/repo/postgres"
+	"main/packages/post/repo/subscriber"
 	"net/http"
 	"os"
 )
@@ -22,6 +23,8 @@ func main() {
 		port = defaultPort
 	}
 	var resolver *graph.Resolver
+	subManager := subscriber.NewCommentSubscriberManager()
+
 	storageType := os.Getenv("STORAGE")
 	if storageType == "postgres" {
 		postgresConfig := db.Config{
@@ -39,12 +42,12 @@ func main() {
 
 		postStorage := postPostgres.NewPostgresRepo(postgresConn)
 		commStorage := commPostgres.NewPostgresRepo(postgresConn)
-		resolver = graph.NewResolver(postStorage, commStorage)
+		resolver = graph.NewResolver(postStorage, subManager, commStorage)
 
 	} else {
 		postStorage := post.NewPostMemoryRepo()
 		commStorage := comment.NewCommentMemoryRepo()
-		resolver = graph.NewResolver(postStorage, commStorage)
+		resolver = graph.NewResolver(postStorage, subManager, commStorage)
 	}
 
 	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: resolver}))

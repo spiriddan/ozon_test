@@ -41,6 +41,21 @@ func (r *mutationResolver) CreateComment(ctx context.Context, input model.Create
 	return &model.CreateCommentPayload{Comment: &res}, nil
 }
 
+// CommentsSubscription is the resolver for the CommentsSubscription field.
+func (r *subscriptionResolver) CommentsSubscription(ctx context.Context, input model.SubsInput) (<-chan *model.Comment, error) {
+	id, ch, err := r.subscriberManager.AddSubscriber(input.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	go func() {
+		<-ctx.Done()
+		err = r.subscriberManager.DeleteSubscriber(id)
+	}()
+
+	return ch, nil
+}
+
 // Comment returns CommentResolver implementation.
 func (r *Resolver) Comment() CommentResolver { return &commentResolver{r} }
 

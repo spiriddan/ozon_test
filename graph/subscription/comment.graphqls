@@ -1,0 +1,7 @@
+extend type Subscription{
+    CommentsSubscription(input:SubsInput!): Comment!
+}
+
+input SubsInput {
+    ID:Int!
+}

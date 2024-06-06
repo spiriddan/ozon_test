@@ -42,6 +42,13 @@ type PostsPayload struct {
 type Query struct {
 }
 
+type SubsInput struct {
+	ID int `json:"ID"`
+}
+
+type Subscription struct {
+}
+
 type CreateCommentInput struct {
 	Body       string `json:"body"`
 	ParentType Parent `json:"parentType"`

@@ -8,4 +8,10 @@ type (
 		GetPosts() (*model.PostsPayload, error)
 		CreatePost(input model.CreatePostInput) (*model.CreatePostPayload, error)
 	}
+
+	Subscriber interface {
+		AddSubscriber(postId int) (int, chan *model.Comment, error)
+		DeleteSubscriber(id int) error
+		SendNotification(id int, comment model.Comment) error
+	}
 )

@@ -10,13 +10,15 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	postRepo    post.Repo
-	commentRepo comment.Repo
+	postRepo          post.Repo
+	subscriberManager post.Subscriber
+	commentRepo       comment.Repo
 }
 
-func NewResolver(postRepo post.Repo, commentRepo comment.Repo) *Resolver {
+func NewResolver(postRepo post.Repo, subManager post.Subscriber, commentRepo comment.Repo) *Resolver {
 	return &Resolver{
-		postRepo:    postRepo,
-		commentRepo: commentRepo,
+		postRepo:          postRepo,
+		subscriberManager: subManager,
+		commentRepo:       commentRepo,
 	}
 }
